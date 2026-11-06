@@ -27,6 +27,12 @@ export function minutesToTime(min: number): string {
   return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
 }
 
+// Single source of truth for converting a time input field to minutes.
+// Empty/invalid input collapses to 0 so live feedback never sees NaN.
+export function parseTimeField(time: string): number {
+  return timeToMinutes(time) ?? 0;
+}
+
 export function overlaps(a: { start: number; end: number }, b: { start: number; end: number }): boolean {
   return a.start < b.end && b.start < a.end;
 }
@@ -39,12 +45,45 @@ export function pastStartIssue(start: number, currentTime: number): ValidationIs
   };
 }
 
+// AC1 (interval validity + start after current time) and AC2 (max 120 minutes).
+export function validateInterval(start: number, end: number, currentTime: number): ValidationIssue[] {
+  const issues: ValidationIssue[] = [];
+
+  if (start < 0 || end > MINUTES_PER_DAY || !(start < end)) {
+    issues.push({
+      code: 'invalid-interval',
+      message: 'Start must be earlier than end, and both must be within 00:00–24:00.',
+    });
+  }
+  const pastStart = pastStartIssue(start, currentTime);
+  if (pastStart) issues.push(pastStart);
+
+  if (end - start > MAX_BOOKING_MINUTES) {
+    issues.push({
+      code: 'too-long',
+      message: `Bookings cannot exceed ${MAX_BOOKING_MINUTES} minutes. This interval is ${end - start} minutes.`,
+    });
+  }
+
+  return issues;
+}
+
+// AC4: overlap with existing bookings (touching endpoints allowed).
+export function hasOverlap(bookings: Booking[], start: number, end: number): Booking | undefined {
+  for (const b of bookings) {
+    if (overlaps({ start, end }, b)) return b;
+  }
+  return undefined;
+}
+
 export interface CheckResult {
   available: boolean;
   issues: ValidationIssue[];
   conflict?: Booking;
 }
 
+// Composition layer: null-room guard, AC1/AC2 via validateInterval,
+// AC3 blocked check, AC4 via hasOverlap against the selected room's bookings.
 export function checkAvailability(
   room: Room | null,
   start: number,
@@ -58,23 +97,7 @@ export function checkAvailability(
     return { available: false, issues };
   }
 
-  // AC1: interval validity and start after current time
-  if (start < 0 || end > MINUTES_PER_DAY || !(start < end)) {
-    issues.push({
-      code: 'invalid-interval',
-      message: 'Start must be earlier than end, and both must be within 00:00–24:00.',
-    });
-  }
-  const pastStart = pastStartIssue(start, currentTime);
-  if (pastStart) issues.push(pastStart);
-
-  // AC2: booking longer than 120 minutes
-  if (end - start > MAX_BOOKING_MINUTES) {
-    issues.push({
-      code: 'too-long',
-      message: `Bookings cannot exceed ${MAX_BOOKING_MINUTES} minutes. This interval is ${end - start} minutes.`,
-    });
-  }
+  issues.push(...validateInterval(start, end, currentTime));
 
   // AC3: room blocked
   if (room.blocked) {
@@ -86,17 +109,13 @@ export function checkAvailability(
     });
   }
 
-  // AC4: overlap with existing bookings (touching endpoints allowed)
-  let conflict: Booking | undefined;
-  for (const b of room.bookings) {
-    if (overlaps({ start, end }, b)) {
-      conflict = b;
-      issues.push({
-        code: 'overlap',
-        message: `Overlaps with "${b.title}" (${minutesToLabel(b.start)}–${minutesToLabel(b.end)}).`,
-      });
-      break;
-    }
+  // AC4: overlap with the selected room's bookings
+  const conflict = hasOverlap(room.bookings, start, end);
+  if (conflict) {
+    issues.push({
+      code: 'overlap',
+      message: `Overlaps with "${conflict.title}" (${minutesToLabel(conflict.start)}–${minutesToLabel(conflict.end)}).`,
+    });
   }
 
   return { available: issues.length === 0, issues, conflict };

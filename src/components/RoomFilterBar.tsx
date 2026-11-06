@@ -1,14 +1,14 @@
 import { Users, Filter } from 'lucide-react';
 import type { FilterCriteria } from '@/types';
 
-interface FilterBarProps {
+interface RoomFilterBarProps {
   criteria: FilterCriteria;
   equipmentOptions: string[];
   onChange: (next: FilterCriteria) => void;
   onReset: () => void;
 }
 
-export function FilterBar({ criteria, equipmentOptions, onChange, onReset }: FilterBarProps) {
+export function RoomFilterBar({ criteria, equipmentOptions, onChange, onReset }: RoomFilterBarProps) {
   const toggleEquipment = (item: string) => {
     const has = criteria.equipment.includes(item);
     onChange({

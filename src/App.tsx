@@ -1,79 +1,37 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { Clock, Building2, CalendarCheck, RotateCcw } from 'lucide-react';
 import { ROOMS } from '@/data';
-import { RoomCard } from '@/components/RoomCard';
+import { RoomFilterBar } from '@/components/RoomFilterBar';
+import { RoomList } from '@/components/RoomList';
 import { TimeField } from '@/components/TimeField';
 import { AvailabilityResult } from '@/components/AvailabilityResult';
-import { FilterBar } from '@/components/FilterBar';
-import { EmptyState } from '@/components/EmptyState';
-import { collectEquipment, filterRooms } from '@/filter';
-import {
-  checkAvailability,
-  pastStartIssue,
-  timeToMinutes,
-  minutesToLabel,
-  type CheckResult,
-} from '@/utils';
-import type { FilterCriteria } from '@/types';
-
-const DEFAULT_CRITERIA: FilterCriteria = { attendees: 0, equipment: [] };
+import { minutesToLabel } from '@/utils';
+import { useAvailabilitySession } from '@/hooks/useAvailabilitySession';
 
 function App() {
   // Current time in minutes — starts at 10:00 AM for demo convenience
-  const [currentTime, setCurrentTime] = useState(600);
-  const [criteria, setCriteria] = useState<FilterCriteria>(DEFAULT_CRITERIA);
-  const [roomId, setRoomId] = useState<string>('');
-  const [startTime, setStartTime] = useState('11:00');
-  const [endTime, setEndTime] = useState('12:00');
-  const [result, setResult] = useState<CheckResult | null>(null);
+  const [currentTime] = useState(600);
 
-  const equipmentOptions = useMemo(() => collectEquipment(ROOMS), []);
-  const visibleRooms = useMemo(() => filterRooms(ROOMS, criteria), [criteria]);
-
-  const selectedRoom = useMemo(
-    () => ROOMS.find((r) => r.id === roomId) ?? null,
-    [roomId],
-  );
-
-  // F5: if the selected room is no longer visible (hidden by a filter), drop the
-  // selection and result rather than silently pointing at a filtered-out room.
-  const selectedStillVisible = selectedRoom
-    ? visibleRooms.some((r) => r.id === selectedRoom.id)
-    : true;
-
-  const effectiveRoom = selectedStillVisible ? selectedRoom : null;
-
-  const startMin = timeToMinutes(startTime) ?? 0;
-  const endMin = timeToMinutes(endTime) ?? 0;
-
-  // Live field feedback (AC6) uses the same AC1 rule as checkAvailability.
-  const startError = startTime
-    ? pastStartIssue(startMin, currentTime)?.message
-    : undefined;
-
-  const handleCheck = () => {
-    setResult(checkAvailability(effectiveRoom, startMin, endMin, currentTime));
-  };
-
-  const resetFilters = () => setCriteria(DEFAULT_CRITERIA);
-
-  const handleReset = () => {
-    setResult(null);
-    setRoomId('');
-    setStartTime('11:00');
-    setEndTime('12:00');
-    setCriteria(DEFAULT_CRITERIA);
-  };
-
-  const handleCriteriaChange = (next: FilterCriteria) => {
-    setCriteria(next);
-    setResult(null);
-  };
-
-  const handleRoomSelect = (id: string) => {
-    setRoomId(id);
-    setResult(null);
-  };
+  const {
+    criteria,
+    equipmentOptions,
+    visibleRooms,
+    roomId,
+    selectedRoom,
+    startTime,
+    endTime,
+    startMin,
+    endMin,
+    startError,
+    result,
+    check,
+    selectRoom,
+    setStart,
+    setEnd,
+    updateCriteria,
+    resetFilters,
+    resetAll,
+  } = useAvailabilitySession(currentTime);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100">
@@ -112,10 +70,10 @@ function App() {
         <div className="grid gap-6 lg:grid-cols-[1fr_minmax(360px,440px)]">
           {/* Left column: filters + room selection */}
           <section className="flex flex-col gap-5">
-            <FilterBar
+            <RoomFilterBar
               criteria={criteria}
               equipmentOptions={equipmentOptions}
-              onChange={handleCriteriaChange}
+              onChange={updateCriteria}
               onReset={resetFilters}
             />
 
@@ -123,20 +81,12 @@ function App() {
               <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">
                 1. Choose a room
               </h2>
-              {visibleRooms.length === 0 ? (
-                <EmptyState onReset={resetFilters} />
-              ) : (
-                <div className="grid gap-3 sm:grid-cols-2">
-                  {visibleRooms.map((room) => (
-                    <RoomCard
-                      key={room.id}
-                      room={room}
-                      selected={room.id === roomId}
-                      onSelect={() => handleRoomSelect(room.id)}
-                    />
-                  ))}
-                </div>
-              )}
+              <RoomList
+                rooms={visibleRooms}
+                selectedRoomId={roomId}
+                onSelect={selectRoom}
+                onResetFilters={resetFilters}
+              />
             </div>
           </section>
 
@@ -151,10 +101,7 @@ function App() {
                   id="start-time"
                   label="Start"
                   value={startTime}
-                  onChange={(v) => {
-                    setStartTime(v);
-                    setResult(null);
-                  }}
+                  onChange={setStart}
                   error={startError}
                   hint={`After ${minutesToLabel(currentTime)}`}
                 />
@@ -162,10 +109,7 @@ function App() {
                   id="end-time"
                   label="End"
                   value={endTime}
-                  onChange={(v) => {
-                    setEndTime(v);
-                    setResult(null);
-                  }}
+                  onChange={setEnd}
                   hint="Max 2 hours"
                 />
               </div>
@@ -181,14 +125,14 @@ function App() {
               <div className="mt-4 flex gap-3">
                 <button
                   type="button"
-                  onClick={handleCheck}
+                  onClick={check}
                   className="flex-1 rounded-xl bg-teal-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-300 active:scale-[.98]"
                 >
                   Check Availability
                 </button>
                 <button
                   type="button"
-                  onClick={handleReset}
+                  onClick={resetAll}
                   className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-600 transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-200"
                 >
                   <RotateCcw className="h-4 w-4" /> Reset
@@ -202,7 +146,7 @@ function App() {
               </h2>
               <AvailabilityResult
                 result={result}
-                room={effectiveRoom}
+                room={selectedRoom}
                 start={startMin}
                 end={endMin}
               />
