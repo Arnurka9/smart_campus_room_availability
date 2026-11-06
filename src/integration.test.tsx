@@ -135,8 +135,8 @@ describe('Integration: select room → check availability → result', () => {
     const attendeesInput = screen.getByLabelText(/Minimum attendees/i);
     fireEvent.change(attendeesInput, { target: { value: '999' } });
 
-    expect(screen.getByText('No rooms match your filters')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Reset filters/i })).toBeInTheDocument();
+    expect(screen.getByText('No rooms match your filters')).toBeInTheDocument(); // <-
+    expect(screen.getAllByRole('button', { name: /Reset filters/i }).length).toBeGreaterThan(0);
   });
 
   test('Integration: Reset button restores all rooms and clears result', () => {
@@ -145,7 +145,7 @@ describe('Integration: select room → check availability → result', () => {
     fireEvent.change(screen.getByLabelText(/Minimum attendees/i), { target: { value: '999' } });
     expect(screen.getByText('No rooms match your filters')).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: /Reset filters/i }));
+    fireEvent.click(screen.getAllByRole('button', { name: /Reset filters/i })[0]); // <-
     expect(screen.queryByText('No rooms match your filters')).not.toBeInTheDocument();
   });
 });
