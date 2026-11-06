@@ -11,6 +11,7 @@ export interface Room {
   name: string;
   building: string;
   capacity: number;
+  equipment: string[];
   blocked: boolean;
   blockedReason?: string;
   bookings: Booking[];
@@ -21,4 +22,9 @@ export type Decision = 'available' | 'unavailable' | 'pending';
 export interface ValidationIssue {
   code: string;
   message: string;
+}
+
+export interface FilterCriteria {
+  attendees: number;
+  equipment: string[];
 }

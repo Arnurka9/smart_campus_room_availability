@@ -1,4 +1,4 @@
-import { Lock, Users, MapPin } from 'lucide-react';
+import { Lock, Users, MapPin, Wrench } from 'lucide-react';
 import type { Room } from '@/types';
 import { minutesToLabel } from '@/utils';
 
@@ -40,6 +40,19 @@ export function RoomCard({ room, selected, onSelect }: RoomCardProps) {
           </span>
         )}
       </div>
+
+      {room.equipment.length > 0 && (
+        <div className="mt-2.5 flex flex-wrap gap-1.5">
+          {room.equipment.map((item) => (
+            <span
+              key={item}
+              className="inline-flex items-center gap-1 rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600"
+            >
+              <Wrench className="h-3 w-3 text-slate-400" /> {item}
+            </span>
+          ))}
+        </div>
+      )}
 
       {room.bookings.length > 0 && (
         <div className="mt-3 border-t border-slate-100 pt-3">

@@ -9,6 +9,7 @@ function buildRoom(overrides: Partial<Room> = {}): Room {
     name: 'Room 101',
     building: 'Test Building',
     capacity: 30,
+    equipment: [],
     blocked: false,
     bookings: [
       { id: 'b1', title: 'Existing', start: 600, end: 660, organizer: 'Prof. Smith' },

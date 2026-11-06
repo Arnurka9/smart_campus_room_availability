@@ -6,6 +6,7 @@ export const ROOMS: Room[] = [
     name: 'Engineering Hall 101',
     building: 'Engineering Block',
     capacity: 60,
+    equipment: ['Projector', 'Whiteboard', 'Microphone', 'Lecture Capture'],
     blocked: false,
     bookings: [
       { id: 'b1', start: 540, end: 600, title: 'Calculus 101', organizer: 'Dr. Patel' },
@@ -18,6 +19,7 @@ export const ROOMS: Room[] = [
     name: 'Science Block 204',
     building: 'Science Tower',
     capacity: 40,
+    equipment: ['Projector', 'Whiteboard', 'Lab Bench'],
     blocked: true,
     blockedReason: 'Under maintenance until further notice.',
     bookings: [],
@@ -27,6 +29,7 @@ export const ROOMS: Room[] = [
     name: 'Library Study Room A',
     building: 'Central Library',
     capacity: 12,
+    equipment: ['Whiteboard', 'TV Screen'],
     blocked: false,
     bookings: [
       { id: 'b4', start: 600, end: 660, title: 'Study Group', organizer: 'Student Council' },
@@ -37,6 +40,7 @@ export const ROOMS: Room[] = [
     name: 'Business School 310',
     building: 'Kaplan Hall',
     capacity: 80,
+    equipment: ['Projector', 'Microphone', 'Video Conferencing', 'Lecture Capture'],
     blocked: false,
     bookings: [
       { id: 'b5', start: 900, end: 960, title: 'Marketing Lecture', organizer: 'Prof. Adams' },
@@ -48,6 +52,7 @@ export const ROOMS: Room[] = [
     name: 'Arts Center Studio 5',
     building: 'Creative Arts Wing',
     capacity: 25,
+    equipment: ['Projector', 'Sound System', 'Piano'],
     blocked: false,
     bookings: [],
   },

@@ -4,6 +4,9 @@ import { ROOMS } from '@/data';
 import { RoomCard } from '@/components/RoomCard';
 import { TimeField } from '@/components/TimeField';
 import { AvailabilityResult } from '@/components/AvailabilityResult';
+import { FilterBar } from '@/components/FilterBar';
+import { EmptyState } from '@/components/EmptyState';
+import { collectEquipment, filterRooms } from '@/filter';
 import {
   checkAvailability,
   pastStartIssue,
@@ -11,19 +14,34 @@ import {
   minutesToLabel,
   type CheckResult,
 } from '@/utils';
+import type { FilterCriteria } from '@/types';
+
+const DEFAULT_CRITERIA: FilterCriteria = { attendees: 0, equipment: [] };
 
 function App() {
   // Current time in minutes — starts at 10:00 AM for demo convenience
   const [currentTime, setCurrentTime] = useState(600);
+  const [criteria, setCriteria] = useState<FilterCriteria>(DEFAULT_CRITERIA);
   const [roomId, setRoomId] = useState<string>('');
   const [startTime, setStartTime] = useState('11:00');
   const [endTime, setEndTime] = useState('12:00');
   const [result, setResult] = useState<CheckResult | null>(null);
 
+  const equipmentOptions = useMemo(() => collectEquipment(ROOMS), []);
+  const visibleRooms = useMemo(() => filterRooms(ROOMS, criteria), [criteria]);
+
   const selectedRoom = useMemo(
     () => ROOMS.find((r) => r.id === roomId) ?? null,
     [roomId],
   );
+
+  // F5: if the selected room is no longer visible (hidden by a filter), drop the
+  // selection and result rather than silently pointing at a filtered-out room.
+  const selectedStillVisible = selectedRoom
+    ? visibleRooms.some((r) => r.id === selectedRoom.id)
+    : true;
+
+  const effectiveRoom = selectedStillVisible ? selectedRoom : null;
 
   const startMin = timeToMinutes(startTime) ?? 0;
   const endMin = timeToMinutes(endTime) ?? 0;
@@ -34,14 +52,27 @@ function App() {
     : undefined;
 
   const handleCheck = () => {
-    setResult(checkAvailability(selectedRoom, startMin, endMin, currentTime));
+    setResult(checkAvailability(effectiveRoom, startMin, endMin, currentTime));
   };
+
+  const resetFilters = () => setCriteria(DEFAULT_CRITERIA);
 
   const handleReset = () => {
     setResult(null);
     setRoomId('');
     setStartTime('11:00');
     setEndTime('12:00');
+    setCriteria(DEFAULT_CRITERIA);
+  };
+
+  const handleCriteriaChange = (next: FilterCriteria) => {
+    setCriteria(next);
+    setResult(null);
+  };
+
+  const handleRoomSelect = (id: string) => {
+    setRoomId(id);
+    setResult(null);
   };
 
   return (
@@ -74,28 +105,38 @@ function App() {
           </div>
           <div className="flex items-center gap-2 text-sm text-slate-600">
             <Building2 className="h-4 w-4 text-teal-600" />
-            <span>{ROOMS.length} rooms available for checking</span>
+            <span>{visibleRooms.length} of {ROOMS.length} rooms match your filters</span>
           </div>
         </div>
 
         <div className="grid gap-6 lg:grid-cols-[1fr_minmax(360px,440px)]">
-          {/* Left column: room selection */}
-          <section>
-            <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">
-              1. Choose a room
-            </h2>
-            <div className="grid gap-3 sm:grid-cols-2">
-              {ROOMS.map((room) => (
-                <RoomCard
-                  key={room.id}
-                  room={room}
-                  selected={room.id === roomId}
-                  onSelect={() => {
-                    setRoomId(room.id);
-                    setResult(null);
-                  }}
-                />
-              ))}
+          {/* Left column: filters + room selection */}
+          <section className="flex flex-col gap-5">
+            <FilterBar
+              criteria={criteria}
+              equipmentOptions={equipmentOptions}
+              onChange={handleCriteriaChange}
+              onReset={resetFilters}
+            />
+
+            <div>
+              <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">
+                1. Choose a room
+              </h2>
+              {visibleRooms.length === 0 ? (
+                <EmptyState onReset={resetFilters} />
+              ) : (
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {visibleRooms.map((room) => (
+                    <RoomCard
+                      key={room.id}
+                      room={room}
+                      selected={room.id === roomId}
+                      onSelect={() => handleRoomSelect(room.id)}
+                    />
+                  ))}
+                </div>
+              )}
             </div>
           </section>
 
@@ -161,7 +202,7 @@ function App() {
               </h2>
               <AvailabilityResult
                 result={result}
-                room={selectedRoom}
+                room={effectiveRoom}
                 start={startMin}
                 end={endMin}
               />
