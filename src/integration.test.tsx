@@ -154,6 +154,6 @@ describe('Integration: select room → check availability → result', () => {
   fireEvent.change(screen.getByLabelText(/Minimum attendees/i), { target: { value: '999' } });
   
   const buttons = screen.getAllByRole('button', { name: /Reset filters/i });
-  expect(buttons).toHaveLength(1);
-});
+  expect(buttons).toHaveLength(1); 
+  });
 });
