@@ -12,7 +12,7 @@ describe('F4: empty state', () => {
       <RoomList rooms={[]} selectedRoomId="" onSelect={() => {}} onResetFilters={() => {}} />,
     );
     expect(screen.getByText('No rooms match your filters')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Reset filters/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Clear filters/i })).toBeInTheDocument();
   });
 
   test('F4: rooms present → no empty-state text shown', () => {
