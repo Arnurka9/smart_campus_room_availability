@@ -153,7 +153,6 @@ describe('Integration: select room → check availability → result', () => {
   render(<App />);
   fireEvent.change(screen.getByLabelText(/Minimum attendees/i), { target: { value: '999' } });
   
-  // getByRole упадет с ошибкой "Found multiple elements", если кнопок две
   const buttons = screen.getAllByRole('button', { name: /Reset filters/i });
   expect(buttons).toHaveLength(1);
   });
