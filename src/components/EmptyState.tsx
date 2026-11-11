@@ -19,7 +19,7 @@ export function EmptyState({ onReset }: EmptyStateProps) {
         onClick={onReset}
         className="mt-4 inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-200"
       >
-        <RotateCcw className="h-4 w-4" />Clear filters
+        <RotateCcw className="h-4 w-4" /> Clear filters
       </button>
     </div>
   );
